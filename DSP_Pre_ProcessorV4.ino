@@ -56,7 +56,6 @@ void timerIsr() {
 #include <SD.h>
 #include <SerialFlash.h>
 
-// GUItool: begin automatically generated code
 AudioControlSGTL5000     audioShield;
 AudioInputI2S            audioInput;
 AudioOutputI2S           audioOutput;
@@ -103,53 +102,134 @@ AudioConnection          patchCord24(Dynamics, peakPost);
 AudioConnection          patchCord25(Dynamics, 0, audioOutput, 0);
 AudioConnection          patchCord26(Dynamics, 0, audioOutput, 1);
 
-// GUItool: end automatically generated code
+//Auto Volume Control (AVC) on
+/* Valid values for dap_avc parameters
+  maxGain; Maximum gain that can be applied
+  0 - 0 dB
+  1 - 6 dB
+  2 - 12 dB
+  lbiResponse; Integrator Response
+  0 - 0 mS
+  1 - 25 mS
+  2 - 50 mS
+  3 - 100 mS
+  hardLimit
+  0 - Hard limit disabled. AVC Compressor/Expander enabled.
+  1 - Hard limit enabled. The signal is limited to the programmed threshold (signal saturates at the threshold)
+  threshold
+  floating point in range 0 to -96 dB
+  attack
+  floating point figure is dB/s rate at which gain is increased
+  decay
+  floating point figure is dB/s rate at which gain is reduced
+*/
+
+//DEFAULT FLAGS
+#define AVCFLAG 0;
+#define EQUALIZERFLAG 0;
+#define NOISEGATEFLAG 0;
+#define MYINPUT AUDIO_INPUT_MIC;
+
+//DEFAULT AVC LEVELS
+#define AVCGAIN 1.0f;
+#define MYAVCGAIN 1;
+#define MYAVCRESP 1;
+#define MYAVCHARD 0;
+#define MYAVCTHR -18.0f;
+#define MYAVCATT 0.5f;
+#define MYAVCDEC 1.0f;
+
+//DEFAULT LEVELS
+#define MYLINEINLEVEL 0;
+#define MYLINEOUTLEVEL 29;
+#define MYVOLUME 0.7f;
+#define MICGAINSET 35;
+
+// DEFAULT NOISE GATE PARAMETERS
+#define MYNGATTACKTIME 0.01f;
+#define MYNGRELEASETIME 0.2f;
+#define MYNGTHRESHOLD -110.0f;
+#define MYNGHYSTERISIS 6.0f;
+#define MYNGHOLDTIME 0.0003f;
+
+// DEFAULT PROCESSOR PARAMETERS
+#define PROCFLAG 0;
+#define MYPRCTHRESHOLD -30.0f;
+#define MYPRCATTACK 0.03f;
+#define MYPRCRELEASE 0.5f;
+#define MYPRCRATIO 8.0f;
+#define MYPRCKNEEWIDTH 6.0f;
+
+// DEFAULT LIMITER PARAMETERS
+#define LIMFLAG 0;
+#define MYLIMTHRESHOLD -3.0f;
+#define MYLIMATTACK 0.03f;
+#define MYLIMRELEASE 0.03f;
+
+// DEFAULT AUTO MAKEUP GAIN PARAMETERS
+#define AMGFLAG 0;
+#define MYAMGHEADROOM 6.0f;
+
+// DEFAULT MAKEUP GAIN PARAMETERS
+#define MUPFLAG 0;
+#define MYMUPGAIN 0.0f;
 
 int b;
+int maxVal = 0;
+int spectrumFlag = 0;
+
+float AVCgain = AVCGAIN;
+int AVCFlag = AVCFLAG;
+
+int myAVCGain = MYAVCGAIN;
+int myAVCResp = MYAVCRESP;
+int myAVCHard = MYAVCHARD;
+float myAVCThr = MYAVCTHR;
+float myAVCAtt = MYAVCATT;
+float myAVCDec = MYAVCDEC;
+
+int freqBand;
+const int eqFreq[] = {150, 240, 370, 590, 900, 1300, 2000, 3300};
+
 float bandGain[] = {1, 1, 1, 1, 1, 1, 1, 1};
 float ydBLevel[] = {0, 0, 0, 0, 0, 0, 0, 0};
-int eqFreq[] = {150, 240, 370, 590, 900, 1300, 2000, 3300};
-int freqBand;
-float AVCgain = 1;
-int AVCFlag = 1;
-int equalizerFlag = 1;
-int spectrumFlag = 0;
-int noiseGateFlag = 0;
-int myLineInLevel = 0;    // range is 0 to 15
-int myLineOutLevel = 15;  // range is 13 to 31
-float myVolume = 0.7;     // 0.8 is max for undistorted headphone output
-float micGainSet = 35;    // 35 for the Chinese MH-1B8 mic
-int maxVal = 0;
-int myInput = AUDIO_INPUT_MIC;
+
+int equalizerFlag = EQUALIZERFLAG;
+int noiseGateFlag = NOISEGATEFLAG;
+int myLineInLevel = MYLINEINLEVEL;    // range is 0 to 15
+int myLineOutLevel = MYLINEOUTLEVEL;  // range is 13 to 31
+float myVolume = MYVOLUME;     // 0.8 is max for undistorted headphone output
+float micGainSet = MICGAINSET;    // 35 for the Chinese MH-1B8 mic
+int myInput = MYINPUT;
 
 // Default Noise Gate parameters
-float myNGattackTime = 0.01f;
-float myNGreleaseTime = 0.2f;
-float myNGthreshold = -110.0f;
-float myNGhysterisis = 6.0f;
-float myNGholdTime = 0.0003f;
+float myNGattackTime = MYNGATTACKTIME;
+float myNGreleaseTime = MYNGRELEASETIME;
+float myNGthreshold = MYNGTHRESHOLD;
+float myNGhysterisis = MYNGHYSTERISIS;
+float myNGholdTime = MYNGHOLDTIME;
 
-// Default Processor parameters (TODO add to save/restore routines)
-int procFlag = 0;
-float myPRCthreshold = -30.0f;
-float myPRCattack = 0.03f;
-float myPRCrelease = 0.5f;
-float myPRCratio = 30.0f;
-float myPRCkneeWidth = 6.0f;
+// Default Processor parameters
+int procFlag = PROCFLAG;
+float myPRCthreshold = MYPRCTHRESHOLD;
+float myPRCattack = MYPRCATTACK;
+float myPRCrelease = MYPRCRELEASE;
+float myPRCratio = MYPRCRATIO;
+float myPRCkneeWidth = MYPRCKNEEWIDTH;
 
 // Default Limiter parameters
-int limFlag = 0;
-float myLIMthreshold = -3.0f;
-float myLIMattack = 0.03f;
-float myLIMrelease = 0.03f;
+int limFlag = LIMFLAG;
+float myLIMthreshold = MYLIMTHRESHOLD;
+float myLIMattack = MYLIMATTACK;
+float myLIMrelease = MYLIMRELEASE;
 
 // Default Auto Makeup Gain parameters
-int amgFlag = 0;
-float myAMGheadroom = 6.0f;
+int amgFlag = AMGFLAG;
+float myAMGheadroom = MYAMGHEADROOM;
 
 // Default Makeup Gain parameters
-int mupFlag = 0;
-float myMUPgain = 0.0f;
+int mupFlag = MUPFLAG;
+float myMUPgain = MYMUPGAIN;
 
 const uint8_t fftOctTab[] = {
   1,  1,
@@ -181,7 +261,7 @@ int SCREEN_ADDRESS = 0x3C; ///< See datasheet for Address; 0x3D for 128x64, 0x3C
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
 // result doAlert(eventMask e, prompt &item);
-eventMask evt = 0;
+eventMask evt;
 
 result alert(menuOut& o, idleEvent e) {
   if (e == idling) {
@@ -201,7 +281,7 @@ result eqON(eventMask e) {
   EQ_MixOut.gain(1, 1);
   EQ_MixOut.gain(2, 0);
   EQ_MixOut.gain(3, 0);
-  Serial.println(""); Serial.print(e); Serial.println(" eqON executed, proceed menu"); Serial.flush();
+  //Serial.Println(""); Serial.print(e); Serial.println(" eqON executed, proceed menu"); Serial.flush();
   return proceed;
 }
 
@@ -211,37 +291,9 @@ result eqOFF(eventMask e) {
   EQ_MixOut.gain(1, 0);
   EQ_MixOut.gain(2, 1);
   EQ_MixOut.gain(3, 0);
-  Serial.println(""); Serial.print(e); Serial.println(" eqOFF executed, proceed menu"); Serial.flush();
+  //Serial.Println(""); Serial.print(e); Serial.println(" eqOFF executed, proceed menu"); Serial.flush();
   return proceed;
 }
-
-//Auto Volume Control (AVC) on
-/* Valid values for dap_avc parameters
-  maxGain; Maximum gain that can be applied
-  0 - 0 dB
-  1 - 6 dB
-  2 - 12 dB
-  lbiResponse; Integrator Response
-  0 - 0 mS
-  1 - 25 mS
-  2 - 50 mS
-  3 - 100 mS
-  hardLimit
-  0 - Hard limit disabled. AVC Compressor/Expander enabled.
-  1 - Hard limit enabled. The signal is limited to the programmed threshold (signal saturates at the threshold)
-  threshold
-  floating point in range 0 to -96 dB
-  attack
-  floating point figure is dB/s rate at which gain is increased
-  decay
-  floating point figure is dB/s rate at which gain is reduced
-*/
-int myAVCGain = 1;
-int myAVCResp = 1;
-int myAVCHard = 0;
-float myAVCThr = -18;
-float myAVCAtt = 0.5;
-float myAVCDec = 1.0;
 
 result AVCon(eventMask e) {
   AVCFlag = 1;
@@ -252,7 +304,7 @@ result AVCon(eventMask e) {
                                  , myAVCAtt   // attack floating point figure is dB/s rate at which gain is increased
                                  , myAVCDec); // decay floating point figure is dB/s rate at which gain is reduced
   audioShield.autoVolumeEnable();
-  Serial.println(""); Serial.print(e); Serial.println(" AVCon executed, proceed menu"); Serial.flush();
+  //Serial.Println(""); Serial.print(e); Serial.println(" AVCon executed, proceed menu"); Serial.flush();
   return proceed;
 }
 
@@ -260,17 +312,18 @@ result AVCon(eventMask e) {
 result AVCoff(eventMask e) {
   AVCFlag = 0;
   audioShield.autoVolumeDisable();
-  Serial.println(""); Serial.print(e); Serial.println(" AVCoff executed, proceed menu"); Serial.flush();
+  //Serial.Println(""); Serial.print(e); Serial.println(" AVCoff executed, proceed menu"); Serial.flush();
   return proceed;
 }
 
 MENU(subLevels, "Vol/Lim Levels", showEvent, anyEvent, wrapStyle
      , EXIT(" <- Back")
-     , FIELD(       myVolume,   "Headphone", " ",   0,  1, 0.1, 0.01, SetLevels, updateEvent, noStyle)
-     , FIELD(  myLineInLevel,     "Line In", " ",   0, 15,   1,     , SetLevels, updateEvent, noStyle)
-     , FIELD( myLineOutLevel,    "Line Out", " ",  13, 31,   1,     , SetLevels, updateEvent, noStyle)
+     , FIELD(     micGainSet,     "Mic.Gain", " ",   0, 63,   1,     , SetLevels, updateEvent, noStyle)
+     , FIELD(       myVolume,    "Headphone", " ",   0,  1, 0.1, 0.01, SetLevels, updateEvent, noStyle)
+     , FIELD(  myLineInLevel,      "Line In", " ",   0, 15,   1,     , SetLevels, updateEvent, noStyle)
+     , FIELD( myLineOutLevel,     "Line Out", " ",  13, 31,   1,     , SetLevels, updateEvent, noStyle)
      , FIELD(  myAMGheadroom, "AMG Headroom", " ",   0, 60,   1,     , SetLevels, updateEvent, noStyle)
-     , FIELD(      myMUPgain, "Makeup Gain", " ", -12, 24,   1,     , SetLevels, updateEvent, noStyle)
+     , FIELD(      myMUPgain,  "Makeup Gain", " ", -12, 24,   1,     , SetLevels, updateEvent, noStyle)
     );
 
 TOGGLE(myAVCGain, chooseAVCgain, "AVC Gain: ", doNothing, noEvent, wrapStyle
@@ -299,7 +352,6 @@ MENU(subAVC, "Auto Vol Ctl cfg", showEvent, anyEvent, wrapStyle
      , FIELD(   myAVCThr, "Thresh.", " dB", -96, 0, 1,    , SetAVCParameters, updateEvent, noStyle)
      , FIELD(   myAVCAtt, "Attack", " dB/s", 0, 10, 1, 0.1, SetAVCParameters, updateEvent, noStyle)
      , FIELD(   myAVCDec,  "Decay", " dB/s", 0, 10, 1, 0.1, SetAVCParameters, updateEvent, noStyle)
-     , FIELD( micGainSet, "Mic.Gain", " dB", 0, 63, 1,    , SetAVCParameters, updateEvent, noStyle)
     );
 
 TOGGLE(equalizerFlag, setEQ, "Equalizer: ", doNothing, noEvent, wrapStyle
@@ -329,8 +381,6 @@ MENU(subEQ, "Equalizer cfg", showEvent, anyEvent, wrapStyle
      , FIELD(ydBLevel[7], "3.3 KHz", " db", -12, 12, 1, 0.1, EqGainSetL, updateEvent, noStyle)
     );
 
-// Configuration https://github.com/neu-rah/ArduinoMenu/wiki/Menu-definition
-
 result toggleAudioSpectrum(eventMask e) {
   if (spectrumFlag == 0) {
     spectrumFlag = 1;
@@ -353,13 +403,13 @@ result toggleAudioSpectrum(eventMask e) {
     display.print("-8");
     display.display();
 
-    Serial.println();
-    Serial.println("Audio Spectrum ON");
+    //Serial.Println();
+    //Serial.Println("Audio Spectrum ON");
   }
   else {
     spectrumFlag = 0;
-    Serial.println();
-    Serial.println("Audio Spectrum OFF");
+    //Serial.Println();
+    //Serial.Println("Audio Spectrum OFF");
   }
   return proceed;
 }
@@ -367,19 +417,19 @@ result toggleAudioSpectrum(eventMask e) {
 result ngON(eventMask e) {
   Dynamics.gate(myNGthreshold, myNGattackTime, myNGreleaseTime, myNGhysterisis);
   noiseGateFlag = 1;
-  Serial.println();
-  Serial.print(" myNGattackTime: "); Serial.print(myNGattackTime); Serial.print(" myNGreleaseTime: "); Serial.print(myNGreleaseTime); Serial.print(" myNGthreshold: "); Serial.print(myNGthreshold);
-  Serial.print(" myNGholdTime: "); Serial.print(myNGholdTime, 4); Serial.print(" myNGhysterisis: "); Serial.print(myNGhysterisis);
-  Serial.println();
-  Serial.println("Noise Gate ON");
+  //Serial.Println();
+  //Serial.Print(" myNGattackTime: "); Serial.print(myNGattackTime); Serial.print(" myNGreleaseTime: "); Serial.print(myNGreleaseTime); Serial.print(" myNGthreshold: "); Serial.print(myNGthreshold);
+  //Serial.Print(" myNGholdTime: "); Serial.print(myNGholdTime, 4); Serial.print(" myNGhysterisis: "); Serial.print(myNGhysterisis);
+  //Serial.Println();
+  //Serial.Println("Noise Gate ON");
   return proceed;
 }
 
 result ngOFF(eventMask e) {
   noiseGateFlag = 0;
   Dynamics.gate( -110.0f, myNGattackTime, myNGreleaseTime, myNGhysterisis);
-  Serial.println();
-  Serial.println("Noise Gate OFF");
+  //Serial.Println();
+  //Serial.Println("Noise Gate OFF");
   return proceed;
 }
 
@@ -400,22 +450,22 @@ TOGGLE(noiseGateFlag, setNG, "Noise Gate: ", doNothing, noEvent, wrapStyle
 result procON(eventMask e) {
   Dynamics.compression( myPRCthreshold, myPRCattack, myPRCrelease, myPRCratio, myPRCkneeWidth);
   procFlag = 1;
-  Serial.println();
-  Serial.print(" myPRCthreshold: "); Serial.print(myPRCthreshold); Serial.print(" myPRCattack: "); Serial.print(myPRCattack , 4);
-  Serial.print(" myPRCrelease: "); Serial.print(myPRCrelease, 4); Serial.print(" myPRCratio: "); Serial.print(myPRCratio); Serial.print(" myPRCkneeWidth: "); Serial.print(myPRCkneeWidth);
-  Serial.println();
-  Serial.println("Processor ON");
+  //Serial.Println();
+  //Serial.Print(" myPRCthreshold: "); Serial.print(myPRCthreshold); Serial.print(" myPRCattack: "); Serial.print(myPRCattack , 4);
+  //Serial.Print(" myPRCrelease: "); Serial.print(myPRCrelease, 4); Serial.print(" myPRCratio: "); Serial.print(myPRCratio); Serial.print(" myPRCkneeWidth: "); Serial.print(myPRCkneeWidth);
+  //Serial.Println();
+  //Serial.Println("Processor ON");
   return proceed;
 }
 
 result procOFF(eventMask e) {
   Dynamics.compression( 0.0f, 0.03f, 0.5f, 1.0f, 6.0f);
   procFlag = 0;
-  Serial.println();
-  Serial.print(" myPRCthreshold: "); Serial.print(myPRCthreshold); Serial.print(" myPRCattack: "); Serial.print(myPRCattack, 4);
-  Serial.print(" myPRCrelease: "); Serial.print(myPRCrelease, 4); Serial.print(" myPRCratio: "); Serial.print(myPRCratio); Serial.print(" myPRCkneeWidth: "); Serial.print(myPRCkneeWidth);
-  Serial.println();
-  Serial.println("Processor OFF");
+  //Serial.Println();
+  //Serial.Print(" myPRCthreshold: "); Serial.print(myPRCthreshold); Serial.print(" myPRCattack: "); Serial.print(myPRCattack, 4);
+  //Serial.Print(" myPRCrelease: "); Serial.print(myPRCrelease, 4); Serial.print(" myPRCratio: "); Serial.print(myPRCratio); Serial.print(" myPRCkneeWidth: "); Serial.print(myPRCkneeWidth);
+  //Serial.Println();
+  //Serial.Println("Processor OFF");
   return proceed;
 }
 
@@ -436,20 +486,20 @@ TOGGLE(procFlag, setProc, "Processor: ", doNothing, noEvent, wrapStyle
 result limON(eventMask e) {
   Dynamics.limit( myLIMthreshold, myLIMattack, myLIMrelease);
   limFlag = 1;
-  Serial.println();
-  Serial.print(" myLIMthreshold: "); Serial.print(myLIMthreshold); Serial.print(" myLIMattack: "); Serial.print(myLIMattack, 4); Serial.print(" myLIMrelease: "); Serial.print(myLIMrelease, 4);
-  Serial.println();
-  Serial.println("Limiter ON");
+  //Serial.Println();
+  //Serial.Print(" myLIMthreshold: "); Serial.print(myLIMthreshold); Serial.print(" myLIMattack: "); Serial.print(myLIMattack, 4); Serial.print(" myLIMrelease: "); Serial.print(myLIMrelease, 4);
+  //Serial.Println();
+  //Serial.Println("Limiter ON");
   return proceed;
 }
 
 result limOFF(eventMask e) {
   Dynamics.limit( myLIMthreshold, myLIMattack, myLIMrelease);
   limFlag = 0;
-  Serial.println();
-  Serial.print(" myLIMthreshold: "); Serial.print(myLIMthreshold); Serial.print(" myLIMattack: "); Serial.print(myLIMattack, 4); Serial.print(" myLIMrelease: "); Serial.print(myLIMrelease, 4);
-  Serial.println();
-  Serial.println("Limiter OFF");
+  //Serial.Println();
+  //Serial.Print(" myLIMthreshold: "); Serial.print(myLIMthreshold); Serial.print(" myLIMattack: "); Serial.print(myLIMattack, 4); Serial.print(" myLIMrelease: "); Serial.print(myLIMrelease, 4);
+  //Serial.Println();
+  //Serial.Println("Limiter OFF");
   return proceed;
 }
 
@@ -470,6 +520,7 @@ MENU(sdCard, "SD Card", doNothing, noEvent, wrapStyle
      , OP("Read preset", readFromFile, enterEvent)
      , OP("Save preset",  writeToFile, enterEvent)
      , OP("Del. preset",   deleteFile, enterEvent)
+     , OP("Load default", resetDefault, enterEvent)
      , EXIT(" <- Back")
     );
 
@@ -478,20 +529,20 @@ result amgON(eventMask e) {
   mupFlag = 0;
   Dynamics.autoMakeupGain(myAMGheadroom);
   amgFlag = 1;
-  Serial.println();
-  Serial.print(" myAMGheadroom: "); Serial.print(myAMGheadroom);
-  Serial.println();
-  Serial.println("Auto Makeup Gain ON and Makeup Gain OFF");
+  //Serial.Println();
+  //Serial.Print(" myAMGheadroom: "); Serial.print(myAMGheadroom);
+  //Serial.Println();
+  //Serial.Println("Auto Makeup Gain ON and Makeup Gain OFF");
   return proceed;
 }
 
 result amgOFF(eventMask e) {
   Dynamics.autoMakeupGain(0.0f);
   amgFlag = 0;
-  Serial.println();
-  Serial.print(" myAMGheadroom: "); Serial.print(0.0f);
-  Serial.println();
-  Serial.println("Auto Makeup Gain OFF");
+  //Serial.Println();
+  //Serial.Print(" myAMGheadroom: "); Serial.print(0.0f);
+  //Serial.Println();
+  //Serial.Println("Auto Makeup Gain OFF");
   return proceed;
 }
 
@@ -505,20 +556,20 @@ result mupON(eventMask e) {
   amgFlag = 0;
   Dynamics.makeupGain(myMUPgain);
   mupFlag = 1;
-  Serial.println();
-  Serial.print(" myMUPgain: "); Serial.print(myMUPgain);
-  Serial.println();
-  Serial.println("Makeup Gain ON and Auto Makeup OFF");
+  //Serial.Println();
+  //Serial.Print(" myMUPgain: "); Serial.print(myMUPgain);
+  //Serial.Println();
+  //Serial.Println("Makeup Gain ON and Auto Makeup OFF");
   return proceed;
 }
 
 result mupOFF(eventMask e) {
   Dynamics.makeupGain(0.0f);
   mupFlag = 0;
-  Serial.println();
-  Serial.print(" myMUPgain: "); Serial.print(0.0f);
-  Serial.println();
-  Serial.println("Makeup Gain OFF");
+  //Serial.Println();
+  //Serial.Print(" myMUPgain: "); Serial.print(0.0f);
+  //Serial.Println();
+  //Serial.Println("Makeup Gain OFF");
   return proceed;
 }
 
@@ -544,21 +595,22 @@ MENU(mainMenu, "Main menu", doNothing, noEvent, wrapStyle
      , SUBMENU(setAVC)
      , SUBMENU(selMenu)
      , SUBMENU(sdCard)
-     //, OP("Reboot", , enterEvent)
     );
 
 result showEvent(eventMask e, navNode & nav, prompt & item) {
-  Serial.println();
-  Serial.print("event: ");
-  Serial.print(e);
+  //Serial.Println();
+  //Serial.Print("event: ");
+  //Serial.Print(e);
   return proceed;
 }
 
+// Configuration https://github.com/neu-rah/ArduinoMenu/wiki/Menu-definition
+
 #define MAX_DEPTH 2
 
-//define output device
-idx_t serialTops[MAX_DEPTH] = {0};
-serialOut outSerial(Serial, serialTops);
+// define output device
+//idx_t serialTops[MAX_DEPTH] = {0};
+//serialOut outSerial(Serial, serialTops);
 
 //describing a menu output device without macros
 //define at least one panel for menu output
@@ -567,7 +619,8 @@ navNode* nodes[sizeof(panels) / sizeof(panel)];                         //navNod
 panelsList pList(panels, nodes, 1);                                     //a list of panels and nodes
 idx_t tops[MAX_DEPTH] = {0, 0};                                         //store cursor positions for each level
 SSD1306AsciiOut outOLED(&oled, tops, pList, 8, 1 + ((fontH - 1) >> 3) ); //oled output device menu driver
-menuOut* constMEM outputs[] MEMMODE = {&outOLED, &outSerial};           //list of output devices
+// menuOut* constMEM outputs[] MEMMODE = {&outOLED, &outSerial};           //list of output devices
+menuOut* constMEM outputs[] MEMMODE = {&outOLED};           //list of output devices
 outputsList out(outputs, sizeof(outputs) / sizeof(menuOut*));           //outputs list
 
 //macro to create navigation control root object (nav) using mainMenu
@@ -612,14 +665,14 @@ void setup(void) {
   pinMode(encBtn, INPUT_PULLUP);
   pinMode(LED_BUILTIN, OUTPUT);
 
-  Serial.begin(115200);
-  Serial.println("");
+  //Serial.begin(115200);
+  //Serial.Println("");
   /*
     while (!Serial) {
       // wait for Arduino Serial Monitor to be ready
     }
   */
-  Serial.println("DSP Pre-Processor booting");
+  //Serial.Println("DSP Pre-Processor booting");
 
   Wire.begin();
   oled.begin(&Adafruit128x64, I2C_ADDRESS);
@@ -636,20 +689,20 @@ void setup(void) {
   AudioMemory(100);
   audioShield.enable();
 
-  Serial.println("SD Card active");
+  //Serial.Println("SD Card active");
   oled.println("SD Card active");
 
   if (SD.begin(chipSelect))
   {
-    Serial.println("SD card is present");
+    //Serial.Println("SD card is present");
     oled.println("SD card is present");
-    Serial.println("Reading settings");
+    //Serial.Println("Reading settings");
     oled.println("Reading settings");
     readFromFile();
   }
   else
   {
-    Serial.println("SD card missing or failure");
+    //Serial.Println("SD card missing or failure");
     oled.println("SD card missing or failure");
     while (1); //wait here forever
   }
@@ -659,7 +712,7 @@ void setup(void) {
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
+    //Serial.Println(F("SSD1306 allocation failed"));
     for (;;); // Don't proceed, loop forever
   }
   display.clearDisplay();
@@ -682,8 +735,8 @@ void loop()
       display.clearDisplay();
       display.display();
       nav.refresh();
-      Serial.println();
-      Serial.println("Exiting Spectrum");
+      //Serial.Println();
+      //Serial.Println("Exiting Spectrum");
     }
   }
 }
@@ -738,10 +791,10 @@ void SetAudioShield() {
 }
 
 void SetAVCParameters() {
-  Serial.println();
-  Serial.print(" Comp Gain: "); Serial.print(myAVCGain); Serial.print(" Comp Resp: "); Serial.print(myAVCResp); Serial.print(" Hardlimit: "); Serial.print(myAVCHard);
-  Serial.print(" Threshold: "); Serial.print( myAVCThr); Serial.print(" Attack: "); Serial.print(myAVCAtt); Serial.print(" Decay: "); Serial.print(myAVCDec);
-  Serial.print(" Mic Gain: "); Serial.print(micGainSet);
+  //Serial.Println();
+  //Serial.Print(" Comp Gain: "); Serial.print(myAVCGain); Serial.print(" Comp Resp: "); Serial.print(myAVCResp); Serial.print(" Hardlimit: "); Serial.print(myAVCHard);
+  //Serial.Print(" Threshold: "); Serial.print( myAVCThr); Serial.print(" Attack: "); Serial.print(myAVCAtt); Serial.print(" Decay: "); Serial.print(myAVCDec);
+  //Serial.Print(" Mic Gain: "); Serial.print(micGainSet);
 
   if (AVCFlag == 1) {
     audioShield.autoVolumeControl( myAVCGain    // Maximum gain that can be applied 0 - 0 dB / 1 - 6.0 dB / 2 - 12 dB
@@ -752,15 +805,14 @@ void SetAVCParameters() {
                                    , myAVCDec); // decay floating point figure is dB/s rate at which gain is reduced
     audioShield.autoVolumeEnable();
   }
-
-  audioShield.micGain(micGainSet);
 }
 
 void SetLevels() {
-  Serial.println();
-  Serial.print(" Headphone: "); Serial.print(myVolume); Serial.print(" Line In Level: "); Serial.print(myLineInLevel); Serial.print(" Line Out Level: "); Serial.print(myLineOutLevel);
-  Serial.print(" myAMGheadroom: "); Serial.print(myAMGheadroom); Serial.print(" myMUPgain: "); Serial.print(myMUPgain);
+  //Serial.Println();
+  //Serial.Print(" Headphone: "); Serial.print(myVolume); Serial.print(" Line In Level: "); Serial.print(myLineInLevel); Serial.print(" Line Out Level: "); Serial.print(myLineOutLevel);
+  //Serial.Print(" myAMGheadroom: "); Serial.print(myAMGheadroom); Serial.print(" myMUPgain: "); Serial.print(myMUPgain);
   audioShield.volume(myVolume);
+  audioShield.micGain(micGainSet);
   audioShield.lineInLevel(myLineInLevel);
   audioShield.lineOutLevel(myLineOutLevel);
   if (amgFlag == 1) Dynamics.autoMakeupGain(myAMGheadroom);
@@ -779,21 +831,17 @@ void SetInput() {
     audioShield.micGain(0);
   }
   SetAudioShield();
-  Serial.println(); Serial.print("Input: "); Serial.print(myInput);
+  //Serial.Println(); Serial.print("Input: "); Serial.print(myInput);
 }
 
-/*****
-  Purpose:  Function to set gains for the 8-Band Receive EQ
-  Note: Gain Values in dB +/- max of about 20dB either way
-*****/
 void EqGainSetL() {
   for (int freqBand = 0; freqBand < 8; freqBand++) {
     bandGain[freqBand] = pow(10, (ydBLevel[freqBand] / 20));
     if (ydBLevel[freqBand] <= -12) {
       bandGain[freqBand] = 0;
     }
-    Serial.println();
-    Serial.print("Eq. band: "); Serial.print(freqBand); Serial.print(" dB: "); Serial.print(ydBLevel[freqBand]); Serial.print(" Gain: "); Serial.print(bandGain[freqBand]);
+    //Serial.Println();
+    //Serial.Print("Eq. band: "); Serial.print(freqBand); Serial.print(" dB: "); Serial.print(ydBLevel[freqBand]); Serial.print(" Gain: "); Serial.print(bandGain[freqBand]);
   }
 
   EQ_Mix1.gain(0, bandGain[0]);     //  140
@@ -811,21 +859,7 @@ void EqGainSetL() {
   EQ_MixOut.gain(2, 0);
 }
 
-/*****
-  Purpose:  Function to set Filter Parameters
-  Return value:  void
-
-  Note: Gain Values in dB +/- max of about 20dB either way  8-14-18
-*****/
 void SetupFilters() {
-  eqFreq[0] = 150;
-  eqFreq[1] = 240;
-  eqFreq[2] = 370;
-  eqFreq[3] = 590;
-  eqFreq[4] = 900;
-  eqFreq[5] = 1300;
-  eqFreq[6] = 2000;
-  eqFreq[7] = 3300;
   EQ_1.setBandpass(0, eqFreq[0], .9);  // Band 1 140Hz, Q =.9
   EQ_1.setBandpass(1, eqFreq[0], .9);
   EQ_1.setBandpass(2, eqFreq[0], .9);
@@ -926,8 +960,8 @@ void readFromFile()
   char filePref[] = "settings";
   char fileExtn[] = ".txt";
   sprintf(fileName, "%s%i%s", filePref, myPreset, fileExtn);
-  Serial.println();
-  Serial.end();
+  //Serial.Println();
+  //Serial.end();
   String msgBuffer;
   // Check to see if the file exists:
   if (!SD.exists(fileName)) {
@@ -1138,16 +1172,16 @@ void readFromFile()
   oled.println("Settings read");
   oled.println(fileName);
   // Apply settings loaded
-  Serial.begin(115200);
-  Serial.println(msgBuffer);
-  Serial.println("Applying settings loaded to the AudioShield");
+  //Serial.begin(115200);
+  //Serial.Println(msgBuffer);
+  //Serial.Println("Applying settings loaded to the AudioShield");
   SetAudioShield();
 }
 
 void writeToFile()
 {
-  Serial.println();
-  Serial.end();
+  //Serial.Println();
+  //Serial.end();
   char fileName[13];
   char filePref[] = "settings";
   char fileExtn[] = ".txt";
@@ -1199,9 +1233,9 @@ void writeToFile()
     myFile.println(mupFlag);
     myFile.println(myMUPgain);
     myFile.close();
-    Serial.begin(115200);
-    Serial.print("Writing to "); Serial.println(fileName);
-    Serial.println("Done");
+    //Serial.begin(115200);
+    //Serial.Print("Writing to "); Serial.println(fileName);
+    //Serial.Println("Done");
     oled.clear();
     oled.setCursor(0, 0);
     oled.println("Settings saved");
@@ -1209,15 +1243,15 @@ void writeToFile()
   }
   else
   {
-    Serial.begin(115200);
-    Serial.println("Error opening file");
+    //Serial.begin(115200);
+    //Serial.Println("Error opening file");
   }
 }
 
 void deleteFile()
 {
-  Serial.println();
-  Serial.end();
+  //Serial.Println();
+  //Serial.end();
   char fileName[13];
   char filePref[] = "settings";
   char fileExtn[] = ".txt";
@@ -1226,10 +1260,84 @@ void deleteFile()
   if (SD.exists(fileName))
   {
     SD.remove(fileName);
-    Serial.begin(115200);
-    Serial.print("Removing "); Serial.println(fileName);
+    //Serial.begin(115200);
+    //Serial.Print("Removing "); Serial.println(fileName);
   } else {
-    Serial.begin(115200);
-    Serial.print(fileName); Serial.println(" does not exist");
+    //Serial.begin(115200);
+    //Serial.Print(fileName); Serial.println(" does not exist");
   }
+}
+
+void resetDefault(void)
+{
+  AVCgain = AVCGAIN;
+  AVCFlag = AVCFLAG;
+
+  myAVCGain = MYAVCGAIN;
+  myAVCResp = MYAVCRESP;
+  myAVCHard = MYAVCHARD;
+  myAVCThr = MYAVCTHR;
+  myAVCAtt = MYAVCATT;
+  myAVCDec = MYAVCDEC;
+
+  bandGain[0] = 1;
+  bandGain[1] = 1;
+  bandGain[2] = 1;
+  bandGain[3] = 1;
+  bandGain[4] = 1;
+  bandGain[5] = 1;
+  bandGain[6] = 1;
+  bandGain[7] = 1;
+
+  ydBLevel[0] = 0;
+  ydBLevel[1] = 0;
+  ydBLevel[2] = 0;
+  ydBLevel[3] = 0;
+  ydBLevel[4] = 0;
+  ydBLevel[5] = 0;
+  ydBLevel[6] = 0;
+  ydBLevel[7] = 0;
+
+  equalizerFlag = EQUALIZERFLAG;
+  noiseGateFlag = NOISEGATEFLAG;
+  myLineInLevel = MYLINEINLEVEL;
+  myLineOutLevel = MYLINEOUTLEVEL;
+  myVolume = MYVOLUME;
+  micGainSet = MICGAINSET;
+  myInput = MYINPUT;
+
+  // Default Noise Gate parameters
+  myNGattackTime = MYNGATTACKTIME;
+  myNGreleaseTime = MYNGRELEASETIME;
+  myNGthreshold = MYNGTHRESHOLD;
+  myNGhysterisis = MYNGHYSTERISIS;
+  myNGholdTime = MYNGHOLDTIME;
+
+  // Default Processor parameters
+  procFlag = PROCFLAG;
+  myPRCthreshold = MYPRCTHRESHOLD;
+  myPRCattack = MYPRCATTACK;
+  myPRCrelease = MYPRCRELEASE;
+  myPRCratio = MYPRCRATIO;
+  myPRCkneeWidth = MYPRCKNEEWIDTH;
+
+  // Default Limiter parameters
+  limFlag = LIMFLAG;
+  myLIMthreshold = MYLIMTHRESHOLD;
+  myLIMattack = MYLIMATTACK;
+  myLIMrelease = MYLIMRELEASE;
+
+  // Default Auto Makeup Gain parameters
+  amgFlag = AMGFLAG;
+  myAMGheadroom = MYAMGHEADROOM;
+
+  // Default Makeup Gain parameters
+  mupFlag = MUPFLAG;
+  myMUPgain = MYMUPGAIN;
+  
+  SetAudioShield();
+  
+  oled.clear();
+  oled.setCursor(0, 0);
+  oled.println("Defaults loaded");
 }

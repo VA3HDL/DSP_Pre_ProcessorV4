@@ -1,4 +1,4 @@
-/* Audio Library for Teensy 3.X
+/* Audio Library for Teensy
    Dynamics Processor (Gate, Compressor & Limiter)
    Copyright (c) 2017, Marc Paquette (marc@dacsystemes.com)
    Based on analyse_rms & mixer objects by Paul Stoffregen
@@ -31,7 +31,7 @@
 #include "utility/sqrt_integer.h"
 
 static float analyse_rms(int16_t *data) {
-  Serial.println(__FUNCTION__);
+  //Serial.Println(__FUNCTION__);
   uint32_t *p = (uint32_t *)data;
   const uint32_t *end = p + AUDIO_BLOCK_SAMPLES / 2;
   int64_t sum = 0;
@@ -52,7 +52,7 @@ static float analyse_rms(int16_t *data) {
 }
 
 static void applyGain(int16_t *data, int32_t mult1, int32_t mult2) {
-  Serial.println(__FUNCTION__);
+  //Serial.Println(__FUNCTION__);
   uint32_t *p = (uint32_t *)data;
   const uint32_t *end = p + AUDIO_BLOCK_SAMPLES / 2;
   int32_t inc = (mult2 - mult1) / (AUDIO_BLOCK_SAMPLES / 2);

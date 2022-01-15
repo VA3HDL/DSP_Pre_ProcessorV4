@@ -1,4 +1,4 @@
-/* Audio Library for Teensy 3.X
+/* Audio Library for Teensy
    Dynamics Processor (Gate, Compressor & Limiter)
    Copyright (c) 2018, Marc Paquette (marc@dacsystemes.com)
    Based on analyse_rms, effect_envelope & mixer objects by Paul Stoffregen
@@ -32,7 +32,7 @@
 #include "Arduino.h"
 #include "AudioStream.h"
 
-#define MIN_DB	-110.0f
+#define MIN_DB -110.0f
 #define MAX_DB	0.0f
 
 #define MIN_T	0.03f  //Roughly 1 block
@@ -55,7 +55,7 @@ class AudioEffectDynamics : public AudioStream
     //threshold is in dbFS
     //attack & release are in seconds
     void gate(float threshold = -50.0f, float attack = MIN_T, float release = 0.3f, float hysterisis = 6.0f) {
-      Serial.println(__FUNCTION__);
+      //Serial.Println(__FUNCTION__);
       gateEnabled = threshold > MIN_DB;
 
       gateThresholdOpen = constrain(threshold, MIN_DB, MAX_DB);
@@ -76,7 +76,7 @@ class AudioEffectDynamics : public AudioStream
     //ratio is expressed as x:1 i.e. 1 for no compression, 60 for brickwall limiting
     //Set kneeWidth to 0 for hard knee
     void compression(float threshold = -40.0f, float attack = MIN_T, float release = 0.5f, float ratio = 35.0f, float kneeWidth = 6.0f) {
-      Serial.println(__FUNCTION__);
+      //Serial.Println(__FUNCTION__);
       compEnabled = threshold < MAX_DB;
 
       compThreshold = constrain(threshold, MIN_DB, MAX_DB);
@@ -101,7 +101,7 @@ class AudioEffectDynamics : public AudioStream
     //threshold is in dbFS
     //attack & release are in seconds
     void limit(float threshold = -3.0f, float attack = MIN_T, float release = MIN_T) {
-      Serial.println(__FUNCTION__);
+      //Serial.Println(__FUNCTION__);
       limiterEnabled = threshold < MAX_DB;
 
       limitThreshold = constrain(threshold, MIN_DB, MAX_DB);
@@ -118,7 +118,7 @@ class AudioEffectDynamics : public AudioStream
     //Enables automatic makeup gain setting
     //headroom is in dbFS
     void autoMakeupGain(float headroom = 6.0f) {
-      Serial.println(__FUNCTION__);
+      //Serial.Println(__FUNCTION__);
       mgAutoEnabled = true;
       mgHeadroom = constrain(headroom, 0.0f, 60.0f);
       computeMakeupGain();
@@ -127,7 +127,7 @@ class AudioEffectDynamics : public AudioStream
     //Sets a fixed makeup gain value.
     //gain is in dbFS
     void makeupGain(float gain = 0.0f) {
-      Serial.println(__FUNCTION__);
+      //Serial.Println(__FUNCTION__);
       mgAutoEnabled = false;
       makeupdb = constrain(gain, -12.0f, 24.0f);
     }
@@ -175,7 +175,7 @@ class AudioEffectDynamics : public AudioStream
     uint16_t sampleIndex = 0;
 
     void computeMakeupGain() {
-      Serial.println(__FUNCTION__);
+      //Serial.Println(__FUNCTION__);
       if (mgAutoEnabled) {
         makeupdb = -compThreshold + (compThreshold * compRatio) + limitThreshold - mgHeadroom;
       }
@@ -183,7 +183,7 @@ class AudioEffectDynamics : public AudioStream
 
     //Computes smoothing time constants for a 10% to 90% change
     float timeToAlpha(float time) {
-      Serial.println(__FUNCTION__);
+      //Serial.Println(__FUNCTION__);
       return expf(-0.9542f / (((float)AUDIO_SAMPLE_RATE_EXACT / (float)AUDIO_BLOCK_SAMPLES) * time));
     }
 
